@@ -188,6 +188,7 @@ npm run dev
 ### 4. Open the App
 
 Visit **https://book-manager-platform.vercel.app/** — create an account and start managing your books!
+Backend Url **[https://book-manager-platform.vercel.app/](https://book-manager-platform.onrender.com)**
 
 ---
 
