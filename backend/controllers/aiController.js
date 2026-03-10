@@ -214,7 +214,6 @@ const sendMessage = async (req, res) => {
             _id: req.params.id,
             userId: req.user.userId,
         });
-        console.log(message)
         if (!conversation) {
             return res.status(404).json({ error: 'Conversation not found' });
         }
