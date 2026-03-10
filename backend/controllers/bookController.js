@@ -98,11 +98,22 @@ const getBook = async (req, res) => {
     }
 };
 
-// PUT /api/books/:id - Update book
+// PUT /api/books/:id - Update book (partial update — only modifies sent fields)
 const updateBook = async (req, res) => {
     try {
         const sanitized = sanitizeInput(req.body);
-        const result = updateBookSchema.safeParse(sanitized);
+
+        // Only validate fields that were actually sent in the request
+        // This prevents Zod defaults from overwriting existing data
+        const fieldsToValidate = {};
+        const allowedFields = ['title', 'author', 'tags', 'status', 'coverUrl', 'pageCount', 'currentPage', 'description', 'notes', 'rating'];
+        for (const key of allowedFields) {
+            if (key in sanitized) {
+                fieldsToValidate[key] = sanitized[key];
+            }
+        }
+
+        const result = updateBookSchema.safeParse(fieldsToValidate);
 
         if (!result.success) {
             return res.status(422).json({
@@ -116,14 +127,20 @@ const updateBook = async (req, res) => {
             return res.status(404).json({ error: 'Book not found' });
         }
 
-        const updateData = { ...result.data };
+        // Only include validated fields that were actually in the request
+        const updateData = {};
+        for (const key of Object.keys(result.data)) {
+            if (key in sanitized) {
+                updateData[key] = result.data[key];
+            }
+        }
 
         // Handle status transitions
-        if (result.data.status && result.data.status !== currentBook.status) {
-            if (result.data.status === 'reading' && !currentBook.startedAt) {
+        if (updateData.status && updateData.status !== currentBook.status) {
+            if (updateData.status === 'reading' && !currentBook.startedAt) {
                 updateData.startedAt = new Date();
             }
-            if (result.data.status === 'completed') {
+            if (updateData.status === 'completed') {
                 updateData.completedAt = new Date();
                 if (!currentBook.startedAt) {
                     updateData.startedAt = new Date();
@@ -133,7 +150,7 @@ const updateBook = async (req, res) => {
 
         const book = await Book.findOneAndUpdate(
             { _id: req.params.id, userId: req.user.userId },
-            updateData,
+            { $set: updateData },
             { new: true, runValidators: true }
         );
 

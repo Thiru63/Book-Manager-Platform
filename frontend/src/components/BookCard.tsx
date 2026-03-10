@@ -13,16 +13,16 @@ interface BookCardProps {
 }
 
 export default function BookCard({ book, onStatusChange, onEdit, onDelete, onProgressUpdate }: BookCardProps) {
-    const [showMenu, setShowMenu] = useState(false);
     const [showProgress, setShowProgress] = useState(false);
     const [progressInput, setProgressInput] = useState(book.currentPage.toString());
     const [isDeleting, setIsDeleting] = useState(false);
     const [showConfetti, setShowConfetti] = useState(false);
+    const [confirmDelete, setConfirmDelete] = useState(false);
 
     const statusColors = {
-        want_to_read: { bg: 'bg-violet-100 dark:bg-violet-900/30', text: 'text-violet-700 dark:text-violet-300', border: 'border-violet-200 dark:border-violet-800' },
-        reading: { bg: 'bg-amber-100 dark:bg-amber-900/30', text: 'text-amber-700 dark:text-amber-300', border: 'border-amber-200 dark:border-amber-800' },
-        completed: { bg: 'bg-emerald-100 dark:bg-emerald-900/30', text: 'text-emerald-700 dark:text-emerald-300', border: 'border-emerald-200 dark:border-emerald-800' },
+        want_to_read: { bg: 'bg-violet-100 dark:bg-violet-900/30', text: 'text-violet-700 dark:text-violet-300' },
+        reading: { bg: 'bg-amber-100 dark:bg-amber-900/30', text: 'text-amber-700 dark:text-amber-300' },
+        completed: { bg: 'bg-emerald-100 dark:bg-emerald-900/30', text: 'text-emerald-700 dark:text-emerald-300' },
     };
 
     const statusLabels = {
@@ -36,7 +36,6 @@ export default function BookCard({ book, onStatusChange, onEdit, onDelete, onPro
     const handleStatusChange = async (newStatus: BookStatus) => {
         if (newStatus === 'completed' && book.status !== 'completed') {
             setShowConfetti(true);
-            // Dynamic import for confetti
             try {
                 const confetti = (await import('canvas-confetti')).default;
                 confetti({
@@ -51,7 +50,6 @@ export default function BookCard({ book, onStatusChange, onEdit, onDelete, onPro
             setTimeout(() => setShowConfetti(false), 3000);
         }
         await onStatusChange(book._id, newStatus);
-        setShowMenu(false);
     };
 
     const handleProgressSave = async () => {
@@ -63,11 +61,15 @@ export default function BookCard({ book, onStatusChange, onEdit, onDelete, onPro
     };
 
     const handleDelete = async () => {
-        if (confirm('Are you sure you want to delete this book?')) {
-            setIsDeleting(true);
-            await onDelete(book._id);
-            setIsDeleting(false);
+        if (!confirmDelete) {
+            setConfirmDelete(true);
+            setTimeout(() => setConfirmDelete(false), 3000);
+            return;
         }
+        setIsDeleting(true);
+        await onDelete(book._id);
+        setIsDeleting(false);
+        setConfirmDelete(false);
     };
 
     const progress = book.pageCount > 0 ? Math.min((book.currentPage / book.pageCount) * 100, 100) : 0;
@@ -111,54 +113,31 @@ export default function BookCard({ book, onStatusChange, onEdit, onDelete, onPro
                             <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 truncate">by {book.author}</p>
                         </div>
 
-                        {/* Menu button */}
-                        <div className="relative flex-shrink-0">
+                        {/* Direct Action Icons — Edit & Delete */}
+                        <div className="flex items-center gap-1 flex-shrink-0">
                             <button
-                                onClick={() => setShowMenu(!showMenu)}
-                                className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all opacity-0 group-hover:opacity-100"
-                                aria-label="Book options"
+                                onClick={() => onEdit(book)}
+                                className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-violet-600 dark:hover:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-all"
+                                aria-label="Edit book"
+                                title="Edit"
                             >
-                                ⋮
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                                    <path d="M2.695 14.763l-1.262 3.154a.5.5 0 00.65.65l3.155-1.262a4 4 0 001.343-.885L17.5 5.5a2.121 2.121 0 00-3-3L3.58 13.42a4 4 0 00-.885 1.343z" />
+                                </svg>
                             </button>
-
-                            {showMenu && (
-                                <>
-                                    <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
-                                    <div className="absolute right-0 top-full mt-1 z-20 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden py-1">
-                                        <button
-                                            onClick={() => { onEdit(book); setShowMenu(false); }}
-                                            className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
-                                        >
-                                            ✏️ Edit Book
-                                        </button>
-                                        <div className="border-t border-gray-100 dark:border-gray-700 my-1" />
-                                        {statusOptions.filter((s) => s !== book.status).map((s) => (
-                                            <button
-                                                key={s}
-                                                onClick={() => handleStatusChange(s)}
-                                                className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
-                                            >
-                                                {statusLabels[s]}
-                                            </button>
-                                        ))}
-                                        {book.status === 'reading' && book.pageCount > 0 && (
-                                            <button
-                                                onClick={() => { setShowProgress(!showProgress); setShowMenu(false); }}
-                                                className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
-                                            >
-                                                📊 Update Progress
-                                            </button>
-                                        )}
-                                        <div className="border-t border-gray-100 dark:border-gray-700 my-1" />
-                                        <button
-                                            onClick={handleDelete}
-                                            className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                                        >
-                                            🗑️ Delete
-                                        </button>
-                                    </div>
-                                </>
-                            )}
+                            <button
+                                onClick={handleDelete}
+                                className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${confirmDelete
+                                    ? 'text-white bg-red-500 hover:bg-red-600 scale-110'
+                                    : 'text-gray-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20'
+                                    }`}
+                                aria-label={confirmDelete ? 'Confirm delete' : 'Delete book'}
+                                title={confirmDelete ? 'Click again to confirm' : 'Delete'}
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                                    <path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.58.177-2.365.298a.75.75 0 10.23 1.482l.149-.022.841 10.518A2.75 2.75 0 007.596 19h4.807a2.75 2.75 0 002.742-2.53l.841-10.52.149.023a.75.75 0 00.23-1.482A41.03 41.03 0 0014 4.193V3.75A2.75 2.75 0 0011.25 1h-2.5zM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4zM8.58 7.72a.75.75 0 00-1.5.06l.3 7.5a.75.75 0 101.5-.06l-.3-7.5zm4.34.06a.75.75 0 10-1.5-.06l-.3 7.5a.75.75 0 101.5.06l.3-7.5z" clipRule="evenodd" />
+                                </svg>
+                            </button>
                         </div>
                     </div>
 
@@ -186,7 +165,12 @@ export default function BookCard({ book, onStatusChange, onEdit, onDelete, onPro
                         <div className="mt-auto pt-3">
                             <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
                                 <span>Page {book.currentPage} of {book.pageCount}</span>
-                                <span className="font-medium">{Math.round(progress)}%</span>
+                                <button
+                                    onClick={() => setShowProgress(!showProgress)}
+                                    className="text-violet-500 hover:text-violet-700 dark:hover:text-violet-300 font-medium transition-colors"
+                                >
+                                    {Math.round(progress)}% • Update
+                                </button>
                             </div>
                             <div className="w-full h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
                                 <div
@@ -197,7 +181,7 @@ export default function BookCard({ book, onStatusChange, onEdit, onDelete, onPro
                         </div>
                     )}
 
-                    {/* Status badge */}
+                    {/* Status badge + inline status switchers */}
                     <div className="mt-auto pt-2 flex items-center justify-between">
                         <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-medium ${statusColors[book.status].bg} ${statusColors[book.status].text}`}>
                             {statusLabels[book.status]}
