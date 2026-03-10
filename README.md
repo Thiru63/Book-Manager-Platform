@@ -285,4 +285,4 @@ This project is licensed under the ISC License.
 
 ---
 
-Built with ❤️ by Thirumalai
+Built with ❤️ by Thirumalai E
