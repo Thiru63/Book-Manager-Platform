@@ -134,7 +134,7 @@ export default function HomePage() {
 
       {/* Footer */}
       <footer className="relative z-10 text-center py-8 text-sm text-gray-500 dark:text-gray-400">
-        <p>Built with ❤️ using Next.js, MongoDB & AI</p>
+        <p>Built with ❤️</p>
       </footer>
     </div>
   );
