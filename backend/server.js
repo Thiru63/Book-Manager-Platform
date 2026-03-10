@@ -19,10 +19,22 @@ const PORT = process.env.PORT || 5000;
 // Security headers
 app.use(helmet());
 
-// CORS - allow frontend origin with credentials
+// CORS - allow frontend origins with credentials
+// CLIENT_URL can be comma-separated for multiple origins (e.g., "http://localhost:3000,https://your-app.vercel.app")
+const allowedOrigins = (process.env.CLIENT_URL || 'http://localhost:3000')
+    .split(',')
+    .map((url) => url.trim());
+
 app.use(
     cors({
-        origin: process.env.CLIENT_URL || 'http://localhost:3000',
+        origin: function (origin, callback) {
+            // Allow requests with no origin (mobile apps, curl, etc.)
+            if (!origin) return callback(null, true);
+            if (allowedOrigins.includes(origin)) {
+                return callback(null, true);
+            }
+            return callback(new Error('Not allowed by CORS'));
+        },
         credentials: true,
     })
 );

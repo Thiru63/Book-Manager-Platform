@@ -4,11 +4,12 @@ const { generateAccessToken, generateRefreshToken, verifyRefreshToken } = requir
 const { signupSchema, loginSchema } = require('../utils/validations');
 const { sanitizeInput } = require('../utils/sanitize');
 
-// Cookie options
+// Cookie options — must use SameSite=None for cross-domain (Vercel ↔ Render)
+const isProduction = process.env.NODE_ENV === 'production';
 const cookieOptions = {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    secure: isProduction,                    // HTTPS only in production
+    sameSite: isProduction ? 'none' : 'lax', // 'none' required for cross-domain cookies
     path: '/',
 };
 
@@ -122,8 +123,8 @@ const logout = async (req, res) => {
             await RefreshToken.deleteOne({ token: refreshToken });
         }
 
-        res.clearCookie('access_token', { path: '/' });
-        res.clearCookie('refresh_token', { path: '/' });
+        res.clearCookie('access_token', cookieOptions);
+        res.clearCookie('refresh_token', cookieOptions);
 
         res.status(200).json({ message: 'Logged out successfully' });
     } catch (error) {
@@ -143,8 +144,8 @@ const refresh = async (req, res) => {
 
         const payload = verifyRefreshToken(oldRefreshToken);
         if (!payload) {
-            res.clearCookie('access_token', { path: '/' });
-            res.clearCookie('refresh_token', { path: '/' });
+            res.clearCookie('access_token', cookieOptions);
+            res.clearCookie('refresh_token', cookieOptions);
             return res.status(401).json({ error: 'Invalid or expired refresh token' });
         }
 
@@ -153,8 +154,8 @@ const refresh = async (req, res) => {
         if (!storedToken) {
             // Token reuse detected – invalidate all tokens for this user
             await RefreshToken.deleteMany({ userId: payload.userId });
-            res.clearCookie('access_token', { path: '/' });
-            res.clearCookie('refresh_token', { path: '/' });
+            res.clearCookie('access_token', cookieOptions);
+            res.clearCookie('refresh_token', cookieOptions);
             return res.status(401).json({ error: 'Token reuse detected. Please login again.' });
         }
 
