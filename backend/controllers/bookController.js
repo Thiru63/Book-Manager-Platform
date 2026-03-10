@@ -151,7 +151,7 @@ const updateBook = async (req, res) => {
         const book = await Book.findOneAndUpdate(
             { _id: req.params.id, userId: req.user.userId },
             { $set: updateData },
-            { new: true, runValidators: true }
+            { returnDocument: 'after', runValidators: true }
         );
 
         res.json({ book });

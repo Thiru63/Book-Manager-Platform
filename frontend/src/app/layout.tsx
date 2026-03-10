@@ -22,9 +22,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
-      <head>
-        <script src="https://js.puter.com/v2/" defer></script>
-      </head>
       <body className={`${inter.variable} font-sans antialiased bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 min-h-screen`}>
         <ThemeProvider>
           <AuthProvider>

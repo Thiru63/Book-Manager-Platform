@@ -15,7 +15,7 @@ const updateReadingGoal = async (req, res) => {
         const user = await User.findByIdAndUpdate(
             req.user.userId,
             { readingGoal: result.data.readingGoal },
-            { new: true }
+            { returnDocument: 'after' }
         ).select('-passwordHash');
 
         if (!user) {
